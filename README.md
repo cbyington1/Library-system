@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
 See `example_functions.py` for query patterns
 
-## Guidelines for Flask Integration (Milestone 3)
+## Guidelines for Integration (Milestone 3)
 
 Structure your functions so they're easy to call from routes:
 
