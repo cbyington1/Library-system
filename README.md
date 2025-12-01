@@ -12,7 +12,7 @@ CS-4347 Database Systems
 Library Management System implementing book search, loan management, borrower management, and fines processing with database schema.
 
 ## Language and Version
-- **Language**: Python
+- **Language**: Python (3.8 or higher)
 - **Database**: PostgreSQL (hosted on Railway)
 
 ## Dependencies (Third Party Modules)
