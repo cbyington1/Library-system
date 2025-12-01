@@ -1,29 +1,19 @@
-# fines.py
 from datetime import date
 from typing import List, Dict, Any
-from db_connection import execute_query
-from db_connection import get_db_connection
+from db_connection import execute_query, get_db_connection
 
 DAILY_FINE = 0.25
 
-
 def _calculate_fine(due_date, end_date) -> float:
-    """Return fine amount based on days late * $0.25."""
     days_late = (end_date - due_date).days
     if days_late <= 0:
         return 0.00
     return round(days_late * DAILY_FINE, 2)
 
-
 def update_fines() -> int:
-    """
-    Update or insert all fines based on late BOOK_LOANS records.
-    Returns number of fines inserted or updated.
-    """
     try:
         today = date.today()
 
-        # Get all late loans (returned late OR currently late)
         loans = execute_query(
             """
             SELECT loan_id, due_date, date_in
@@ -33,6 +23,8 @@ def update_fines() -> int:
             fetch=True
         )
 
+        conn = get_db_connection()
+        cursor = conn.cursor()
         updates = 0
 
         for loan in loans:
@@ -42,7 +34,6 @@ def update_fines() -> int:
 
             fine_amt = _calculate_fine(due, end_date)
 
-            # Check if FINES row exists
             existing = execute_query(
                 "SELECT fine_amt, paid FROM FINES WHERE loan_id = %s;",
                 (loan_id,),
@@ -50,14 +41,12 @@ def update_fines() -> int:
             )
 
             if not existing:
-                # INSERT new fine (unpaid)
-                execute_query(
+                cursor.execute(
                     """
                     INSERT INTO FINES (loan_id, fine_amt, paid)
                     VALUES (%s, %s, FALSE);
                     """,
-                    (loan_id, fine_amt),
-                    fetch=False
+                    (loan_id, fine_amt)
                 )
                 updates += 1
             else:
@@ -65,30 +54,27 @@ def update_fines() -> int:
                 old_amt = float(existing[0]["fine_amt"])
 
                 if paid:
-                    # Do not touch paid fines
                     continue
 
                 if old_amt != fine_amt:
-                    # UPDATE existing unpaid fine
-                    execute_query(
+                    cursor.execute(
                         """
                         UPDATE FINES
                         SET fine_amt = %s
                         WHERE loan_id = %s;
                         """,
-                        (fine_amt, loan_id),
-                        fetch=False
+                        (fine_amt, loan_id)
                     )
                     updates += 1
 
+        conn.commit()
+        conn.close()
         return updates
 
     except Exception as e:
         return f"Error updating fines: {e}"
 
-
 def get_fines_grouped(card_no: int, include_paid: bool = False) -> List[Dict[str, Any]]:
-    """Return fines for a borrower grouped by loan_id."""
     try:
         clauses = ["bl.card_no = %s"]
         params = [card_no]
@@ -116,16 +102,8 @@ def get_fines_grouped(card_no: int, include_paid: bool = False) -> List[Dict[str
     except Exception as e:
         return [{"error": f"Error retrieving fines: {e}"}]
 
-
 def pay_fines(card_no: int):
-    """
-    PAY all fines for a borrower.
-    Cannot pay fines for books that are still checked out.
-    Must pay full amount.
-    Returns total amount paid or error.
-    """
     try:
-        # Get unpaid fines
         unpaid = execute_query(
             """
             SELECT f.loan_id, f.fine_amt, bl.date_in
@@ -140,16 +118,16 @@ def pay_fines(card_no: int):
         if not unpaid:
             return "No unpaid fines for this borrower."
 
-        # Check for books not yet returned
         for row in unpaid:
             if row["date_in"] is None:
                 return "Error: Cannot pay fines for books that are not yet returned."
 
-        # Total amount to pay
         total = round(sum(float(row["fine_amt"]) for row in unpaid), 2)
 
-        # Mark all unpaid fines as paid
-        execute_query(
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute(
             """
             UPDATE FINES
             SET paid = TRUE
@@ -160,9 +138,11 @@ def pay_fines(card_no: int):
                 WHERE bl.card_no = %s AND f.paid = FALSE
             );
             """,
-            (card_no,),
-            fetch=False
+            (card_no,)
         )
+        
+        conn.commit()
+        conn.close()
 
         return total
 
@@ -170,14 +150,18 @@ def pay_fines(card_no: int):
         return f"Error processing payment: {e}"
 
 if __name__ == "__main__":
-    print("Updating fines...")
-    print(update_fines())
-
-    print("\nUnpaid fines for card_no = 3")
-    print(get_fines_grouped(3))
-
-    print("\nPaying fines for card_no = 3")
-    print(pay_fines(3))
-
-    print("\nFines after payment:")
-    print(get_fines_grouped(3))
+    print("Testing fines...\n")
+    
+    print("1. Update fines:")
+    result = update_fines()
+    print(f"   Updated {result} fines")
+    
+    print("\n2. Get unpaid fines for card_no = 2:")
+    fines = get_fines_grouped(2)
+    print(f"   Found {len(fines)} unpaid fines")
+    for f in fines:
+        print(f"   - Loan {f['loan_id']}: ${f['fine_amt']}")
+    
+    print("\n3. Pay fines for card_no = 2:")
+    result = pay_fines(2)
+    print(f"   Result: {result}")

@@ -1,137 +1,135 @@
 # Library Management System - Milestone 2
+CS-4347 Database Systems
 
-Database backend for library system. Milestone 3 will add Flask and frontend.
+## Team Members
+- Aliza Karim Karachiwalla
+- Camden Scott Byington
+- Eylul Guldik
+- Jose Leonardo Del Rosario Dos Remedios
+- Zahra Ashfaq
 
-## Setup
+## Project Description
+Library Management System implementing book search, loan management, borrower management, and fines processing with database schema.
 
-1. Clone repo
-2. Activate virtual environment:
-```bash
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Mac/Linux
-```
+## Language and Version
+- **Language**: Python
+- **Database**: PostgreSQL (hosted on Railway)
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+## Dependencies (Third Party Modules)
+- psycopg2-binary (PostgreSQL adapter)
 
-4. Run database setup (creates tables + sample data):
-```bash
-python setup_db.py
-```
+See `requirements.txt` for specific versions.
 
-5. Test connection:
+## Setup Instructions
+
+### 1. Install Python
+
+### 2. Create Virtual Environment
+
+### 3. Activate Virtual Environment
+
+### 4. Install Dependencies
+
+### 5. Database Setup
+The database is pre-configured and hosted on Railway PostgreSQL. Connection details are in `db_connection.py`.
+
+To verify connection:
 ```bash
 python db_connection.py
 ```
 
-## Database
+**Note**: Do NOT run `setup_db.py` unless you want to reset the database.
 
-- **Platform**: Railway PostgreSQL
-- **Connection**: Managed in `db_connection.py`
-- **Tables**: BOOK, AUTHORS, BOOK_AUTHORS, BORROWER, BOOK_LOANS, FINES
-- **Sample Data**: 30 books, 30 authors, 10 borrowers
+## Running the Application
 
-## Features to Implement
+Each feature can be tested individually:
 
-Each feature should be a standalone function that takes parameters and returns results. This makes it easy to call from Flask later.
+### Book Search
+```bash
+python book_search.py
+```
+Searches for books by ISBN, title, or author 
 
-### 1. book_search.py
-```python
-def search(search_term):
-    # Search ISBN, title, or author
-    # Return list of dicts with: isbn, title, authors, availability
-    pass
+### Book Loans
+```bash
+python book_loans.py
+```
+Handles checkout and checkin operations with validation 
+
+### Borrower Management
+```bash
+python borrower_management.py
+```
+Creates new borrowers with auto-generated card numbers and duplicate SSN prevention.
+
+### Fines
+```bash
+python fines.py
+```
+Calculates and updates fines at $0.25/day and processes payments.
+
+## Project Structure
+```
+library-system/
+├── db_connection.py          # Database connection helper
+├── schema.sql                # Database schema 
+├── setup_db.py               # Database setup script 
+├── example_functions.py      # Example query patterns
+├── book_search.py            # Feature 1: Book search
+├── book_loans.py             # Feature 2: Checkout/checkin
+├── borrower_management.py    # Feature 3: Borrower creation
+├── fines.py                  # Feature 4: Fines calculation/payment
+├── requirements.txt          # Python dependencies
+└── README.md                 # This file
 ```
 
-### 2. book_loans.py
-```python
-def checkout(isbn, card_no):
-    # Check out book
-    # Return loan_id on success, error message on failure
-    pass
+## Features Implemented
 
-def checkin(loan_ids):
-    # Check in books
-    # Return count of books checked in
-    pass
-```
+### 1. Book Search and Availability
+- Single search field
+- Case-insensitive substring matching
+- Searches ISBN, title, and author names
+- Returns: ISBN, title, authors , availability
 
-### 3. borrower_management.py
-```python
-def create_borrower(ssn, name, address, phone=None):
-    # Create new borrower
-    # Return card_no on success, error message on failure
-    pass
-```
+### 2. Book Loans (20 points)
+**Checkout:**
+- Validates max 3 active loans per borrower
+- Checks book availability
+- Blocks checkout if borrower has unpaid fines
+- Auto-sets due date to 14 days from checkout
 
-### 4. fines.py
-```python
-def calculate_fines():
-    # Update fines for all late books ($0.25/day)
-    # Return count of fines updated
-    pass
+**Checkin:**
+- Search loans by ISBN, card number, or borrower name
+- Updates date_in field
 
-def pay_fines(card_no):
-    # Pay all fines for borrower
-    # Return total paid on success, error message on failure
-    pass
-```
+### 3. Borrower Management (20 points)
+- Creates new borrowers with all required fields
+- Auto-generates card_no 
+- Prevents duplicate SSN
+- Validates required fields 
 
-## How to Build Your Feature
+### 4. Fines (20 points)
+- Calculates fines at $0.25/day
+- Handles both returned late books and currently late books
+- Updates existing unpaid fines
+- Does not modify paid fines
+- Payment processing:
+  - Blocks payment for unreturned books
+  - Requires full payment 
+  - Groups fines by borrower
 
-1. Open your file (e.g., `book_search.py`)
-2. Import connection:
-```python
-from db_connection import get_db_connection
-```
+## Database Schema
+- **BOOK**: isbn (PK), title
+- **AUTHORS**: author_id (PK), name
+- **BOOK_AUTHORS**: author_id (FK), isbn (FK)
+- **BORROWER**: card_no (PK), ssn (UNIQUE), bname, address, phone
+- **BOOK_LOANS**: loan_id (PK), isbn (FK), card_no (FK), date_out, due_date, date_in
+- **FINES**: loan_id (PK, FK), fine_amt (DECIMAL), paid (BOOLEAN)
 
-3. Write your function:
-```python
-def your_function(params):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Your SQL query here
-    query = "SELECT ..."
-    cursor.execute(query, (params,))
-    results = cursor.fetchall()
-    
-    conn.close()
-    return results
-```
-
-4. Test it:
-```python
-if __name__ == "__main__":
-    result = your_function(test_params)
-    print(result)
-```
-
-See `example_functions.py` for query patterns
-
-## Guidelines for Integration (Milestone 3)
-
-Structure your functions so they're easy to call from routes:
-
-```python
-def search(search_term):
-    # Does one thing, returns clean data
-    return [{"isbn": "...", "title": "...", "authors": "...", "available": True}]
-```
-
-**Key points:**
-- Take parameters as function arguments (not input())
-- Return data 
-- Return dicts/lists that can be converted to JSON
-- Handle errors with try/except, return error messages as strings
-
-## Requirements
-
-From project PDF:
-- Book Search: Case-insensitive substring matching on ISBN/title/author
-- Checkout: Max 3 loans per borrower, check availability, check unpaid fines, due date = 14 days
-- Checkin: Update date_in field
-- Borrower: Auto-generate card_no, prevent duplicate SSN
-- Fines: $0.25/day, can't pay until books returned, must pay all at once
+## Sample Data
+Database includes:
+- 30 books
+- 30 authors
+- 10 borrowers
+- 14 book loans (mix of active, returned, on-time, late)
+- 7 fines (paid and unpaid)

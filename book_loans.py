@@ -1,10 +1,6 @@
-# book_loans.py
 from datetime import datetime, timedelta
 from db_connection import get_db_connection
 
-# --------------------------------------------------------
-# Helper: count active loans for borrower
-# --------------------------------------------------------
 def borrower_active_loans(card_no):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -20,9 +16,6 @@ def borrower_active_loans(card_no):
     conn.close()
     return row['count']
 
-# --------------------------------------------------------
-# Helper: check unpaid fines
-# --------------------------------------------------------
 def borrower_unpaid_fines(card_no):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -40,9 +33,6 @@ def borrower_unpaid_fines(card_no):
     conn.close()
     return row['count']
 
-# --------------------------------------------------------
-# Helper: check if a book is already checked out
-# --------------------------------------------------------
 def book_is_checked_out(isbn):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -58,19 +48,13 @@ def book_is_checked_out(isbn):
     conn.close()
     return row['count'] > 0
 
-# --------------------------------------------------------
-# CHECKOUT
-# --------------------------------------------------------
 def checkout(isbn, card_no):
-    # Borrower cannot exceed 3 active loans
     if borrower_active_loans(card_no) >= 3:
         return "ERROR: Borrower already has 3 active loans."
 
-    # Borrower cannot have unpaid fines
     if borrower_unpaid_fines(card_no) > 0:
         return "ERROR: Borrower has unpaid fines."
 
-    # Book must be available
     if book_is_checked_out(isbn):
         return "ERROR: Book is already checked out."
 
@@ -92,9 +76,6 @@ def checkout(isbn, card_no):
 
     return f"SUCCESS: Book checked out. Loan ID: {loan_id}"
 
-# --------------------------------------------------------
-# FIND ACTIVE LOANS
-# --------------------------------------------------------
 def find_loans(isbn=None, card_no=None, name=None):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -128,9 +109,6 @@ def find_loans(isbn=None, card_no=None, name=None):
 
     return results
 
-# --------------------------------------------------------
-# CHECKIN
-# --------------------------------------------------------
 def checkin(loan_id):
     conn = get_db_connection()
     cur = conn.cursor()
@@ -147,3 +125,24 @@ def checkin(loan_id):
     conn.close()
 
     return "SUCCESS: Book checked in."
+
+if __name__ == "__main__":
+    print("Testing book loans...\n")
+    
+    print("1. Find active loans for card_no = 1:")
+    loans = find_loans(card_no=1)
+    print(f"   Found {len(loans)} active loans")
+    for loan in loans:
+        print(f"   - {loan['title']} (Loan ID: {loan['loan_id']})")
+    
+    print("\n2. Try to checkout available book:")
+    result = checkout("9780679783268", 7)
+    print(f"   Result: {result}")
+    
+    print("\n3. Try to checkout already checked-out book:")
+    result = checkout("9780141439518", 7)
+    print(f"   Result: {result}")
+    
+    print("\n4. Check in loan 1:")
+    result = checkin(1)
+    print(f"   Result: {result}")

@@ -1,9 +1,7 @@
-# borrower_management.py
 from typing import Optional, List, Dict, Any
-from db_connection import execute_query
+from db_connection import execute_query, get_db_connection
 
 def _normalize_ssn(ssn: str) -> str:
-    """Ensure SSN is stored as 123-45-6789 if 9 digits are provided."""
     if ssn is None:
         return ssn
     digits = "".join(ch for ch in ssn if ch.isdigit())
@@ -12,7 +10,6 @@ def _normalize_ssn(ssn: str) -> str:
     return ssn.strip()
 
 def _normalize_phone(phone: Optional[str]) -> Optional[str]:
-    """Format 10-digit numbers as (123) 456-7890; otherwise keep as-is."""
     if not phone:
         return None
     digits = "".join(ch for ch in phone if ch.isdigit())
@@ -21,12 +18,6 @@ def _normalize_phone(phone: Optional[str]) -> Optional[str]:
     return phone.strip()
 
 def create_borrower(ssn: str, name: str, address: str, phone: Optional[str] = None):
-    """
-    Create a new borrower.
-    Returns:
-      - int card_no on success
-      - str error message on failure
-    """
     try:
         if not ssn or not name or not address:
             return "Error: SSN, name, and address are required."
@@ -36,7 +27,6 @@ def create_borrower(ssn: str, name: str, address: str, phone: Optional[str] = No
         name = name.strip()
         address = address.strip()
 
-        # 1) Duplicate SSN check
         existing = execute_query(
             "SELECT card_no FROM BORROWER WHERE ssn = %s;",
             (ssn,),
@@ -45,24 +35,26 @@ def create_borrower(ssn: str, name: str, address: str, phone: Optional[str] = No
         if existing:
             return "Error: A borrower with this SSN already exists."
 
-        # 2) Insert and return generated card_no
-        row = execute_query(
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute(
             """
             INSERT INTO BORROWER (ssn, bname, address, phone)
             VALUES (%s, %s, %s, %s)
             RETURNING card_no;
             """,
-            (ssn, name, address, phone),
-            fetch=True,
+            (ssn, name, address, phone)
         )
-        return row[0]["card_no"] if row else "Error: Borrower not created."
+        row = cursor.fetchone()
+        conn.commit()
+        conn.close()
+        
+        return row["card_no"] if row else "Error: Borrower not created."
     except Exception as e:
         return f"Error creating borrower: {e}"
 
 def find_borrowers(query: str) -> List[Dict[str, Any]]:
-    """
-    Search borrowers by exact card_no (if numeric) or substring match on ssn/bname (case-insensitive).
-    """
     try:
         q = (query or "").strip()
         params = []
@@ -89,5 +81,19 @@ def find_borrowers(query: str) -> List[Dict[str, Any]]:
     except Exception as e:
         return [{"error": f"Error searching borrowers: {e}"}]
 
-
-
+if __name__ == "__main__":
+    print("Testing borrower management...\n")
+    
+    print("1. Create new borrower:")
+    result = create_borrower("999887777", "Test Person", "123 Test St", "2145551234")
+    print(f"   Result: {result}")
+    
+    print("\n2. Try duplicate SSN:")
+    result = create_borrower("123-45-6789", "Duplicate", "456 Fake St")
+    print(f"   Result: {result}")
+    
+    print("\n3. Find borrowers with 'Smith':")
+    results = find_borrowers("Smith")
+    print(f"   Found {len(results)} borrowers")
+    for r in results:
+        print(f"   - {r['bname']} (Card: {r['card_no']})")

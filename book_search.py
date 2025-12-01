@@ -13,7 +13,6 @@ def search(search_term):
             "available": <bool>,     # True if not currently checked out
         }
     """
-    print("DEBUG: running NEW search()")
 
     if search_term is None:
         search_term = ""
@@ -66,8 +65,6 @@ def search(search_term):
         rows = cur.fetchall()
         conn.close()
 
-        print("DEBUG: raw DB rows:", rows)
-
         results = []
         for row in rows:
             results.append({
@@ -84,5 +81,4 @@ def search(search_term):
 
 
 if __name__ == "__main__":
-    print("DEBUG: running book_search.py as script")
     print(search("the"))
