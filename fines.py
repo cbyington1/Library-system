@@ -2,12 +2,13 @@
 from datetime import date
 from typing import List, Dict, Any
 from db_connection import execute_query
+from db_connection import get_db_connection
 
 DAILY_FINE = 0.25
 
 
 def _calculate_fine(due_date, end_date) -> float:
-    """Return fine amount based on days late × $0.25."""
+    """Return fine amount based on days late * $0.25."""
     days_late = (end_date - due_date).days
     if days_late <= 0:
         return 0.00
