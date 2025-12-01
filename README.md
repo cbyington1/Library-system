@@ -91,7 +91,7 @@ library-system/
 - Searches ISBN, title, and author names
 - Returns: ISBN, title, authors , availability
 
-### 2. Book Loans (20 points)
+### 2. Book Loans 
 **Checkout:**
 - Validates max 3 active loans per borrower
 - Checks book availability
@@ -102,13 +102,13 @@ library-system/
 - Search loans by ISBN, card number, or borrower name
 - Updates date_in field
 
-### 3. Borrower Management (20 points)
+### 3. Borrower Management
 - Creates new borrowers with all required fields
 - Auto-generates card_no 
 - Prevents duplicate SSN
 - Validates required fields 
 
-### 4. Fines (20 points)
+### 4. Fines 
 - Calculates fines at $0.25/day
 - Handles both returned late books and currently late books
 - Updates existing unpaid fines
