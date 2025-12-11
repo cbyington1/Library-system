@@ -2,11 +2,10 @@ from book_search import search
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-class App(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("Library — Book Search")
-        self.geometry("900x600")
+class BookSearchGUI(ttk.Frame):  
+    def __init__(self, parent):  
+        super().__init__(parent) 
+        
 
         top = ttk.Frame(self, padding=12)
         top.pack(fill="x")
@@ -46,7 +45,7 @@ class App(tk.Tk):
         try:
             self.status.set("Searching…")
             self.update_idletasks()
-            rows = search(q)  # <-- call Milestone-2 directly
+            rows = search(q)
             self.tree.delete(*self.tree.get_children())
             for r in rows:
                 isbn = r.get("isbn", "")
@@ -60,6 +59,8 @@ class App(tk.Tk):
             messagebox.showerror("Search failed", str(e))
 
 if __name__ == "__main__":
-    App().mainloop()
-
-
+    root = tk.Tk()
+    root.title("Library — Book Search")
+    root.geometry("900x600")
+    BookSearchGUI(root).pack(fill="both", expand=True) 
+    root.mainloop()

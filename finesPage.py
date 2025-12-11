@@ -1,15 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-
 from fines import get_fines_grouped, update_fines, pay_fines
 
-class FinesWindow:
-    def __init__(self, root):
-        self.root = root
-        root.title("Library Fine Tracker")
-
+class FinesGUI(ttk.Frame):  
+    def __init__(self, parent):  
+        super().__init__(parent)
+        
         # ----- Card Number Input -----
-        input_frame = tk.Frame(root)
+        input_frame = tk.Frame(self)  
         input_frame.pack(pady=10)
 
         tk.Label(input_frame, text="Borrower Card No:").grid(row=0, column=0, padx=5)
@@ -23,7 +21,7 @@ class FinesWindow:
         # ----- Fines Table -----
         columns = ("loan_id", "isbn", "fine_amt", "paid", "date_out", "due_date", "date_in")
 
-        self.tree = ttk.Treeview(root, columns=columns, show="headings", height=12)
+        self.tree = ttk.Treeview(self, columns=columns, show="headings", height=12) 
         self.tree.pack(padx=10, pady=10, fill="both", expand=True)
 
         for col in columns:
@@ -31,11 +29,10 @@ class FinesWindow:
             self.tree.column(col, width=110)
 
         # Scrollbar
-        scrollbar = ttk.Scrollbar(root, orient="vertical", command=self.tree.yview)
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview) 
         self.tree.configure(yscroll=scrollbar.set)
         scrollbar.pack(side="right", fill="y")
 
-    # ─────────────────────────────────────────
     def load_fines(self):
         card_no = self.card_entry.get()
 
@@ -45,11 +42,9 @@ class FinesWindow:
 
         fines = get_fines_grouped(int(card_no), include_paid=True)
 
-        # Clear old rows
         for item in self.tree.get_children():
             self.tree.delete(item)
 
-        # Insert fines
         for f in fines:
             self.tree.insert("", tk.END, values=(
                 f["loan_id"],
@@ -63,13 +58,11 @@ class FinesWindow:
 
         messagebox.showinfo("Done", f"Loaded {len(fines)} fines.")
 
-    # ─────────────────────────────────────────
     def update_fines(self):
         updated = update_fines()
         messagebox.showinfo("Update Complete", f"{updated} fines updated.")
         self.load_fines()
 
-    # ─────────────────────────────────────────
     def pay_fines(self):
         card_no = self.card_entry.get()
 
@@ -89,5 +82,6 @@ class FinesWindow:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = FinesWindow(root)
+    root.title("Library Fine Tracker")
+    FinesGUI(root).pack(fill="both", expand=True) 
     root.mainloop()
